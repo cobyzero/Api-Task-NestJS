@@ -1,43 +1,33 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { AddTaskDTO, UpdateTaskDTO } from 'src/models/dto/task.dto';
-import { TaskModel } from 'src/models/task.model';
+import { TaskModel } from 'src/models/task.entity';
+import { Repository } from 'typeorm';
 import { v4 } from 'uuid';
 @Injectable()
 export class TaskService {
-  private tasks: TaskModel[] = [];
+  constructor(
+    @InjectRepository(TaskModel) private taskRepository: Repository<TaskModel>,
+  ) {}
 
-  getTasks(): TaskModel[] {
-    return this.tasks;
+  getTasks() {
+    return this.taskRepository.find();
   }
 
   addTask(task: AddTaskDTO) {
-    var taskModel = new TaskModel();
-    taskModel.id = v4();
-    taskModel.name = task.name;
-    taskModel.description = task.description;
-
-    this.tasks.push(taskModel);
+    var taskRepo = this.taskRepository.create(task);
+    return this.taskRepository.save(taskRepo);
   }
 
-  getTaskById(id: string): TaskModel {
-    return this.tasks.find((e) => e.id === id);
+  getTaskById(id: number) {
+    return this.taskRepository.findOneBy({ id });
   }
 
-  updateTask(id: string, task: UpdateTaskDTO) {
-    var taskModel = new TaskModel();
-
-    taskModel.id = id;
-    taskModel.name = task.name;
-    taskModel.description = task.description;
-
-    var taskFind = this.tasks.filter((e) => e.id !== id);
-
-    taskFind.push(taskModel);
-
-    this.tasks = taskFind;
+  updateTask(id: number, task: UpdateTaskDTO) {
+    return this.taskRepository.update({ id }, task);
   }
 
-  deleteTask(id: string) {
-    this.tasks = this.tasks.filter((e) => e.id !== id);
+  deleteTask(id: number) {
+    return this.taskRepository.delete({ id });
   }
 }
